@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dify sendOnEnter Demo — Interactive Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #0f1117; color: #e0e0e0; padding: 20px; }
+  h1 { font-size: 22px; text-align: center; margin-bottom: 4px; color: #fff; }
+  .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 20px; }
+  .subtitle a { color: #6ea8fe; }
+  .container { display: flex; gap: 16px; max-width: 1000px; margin: 0 auto; flex-wrap: wrap; }
+  .panel { flex: 1; min-width: 300px; background: #1a1b23; border-radius: 12px; border: 1px solid #2a2b35; overflow: hidden; }
+  .panel-header { padding: 12px 16px; border-bottom: 1px solid #2a2b35; display: flex; align-items: center; justify-content: space-between; }
+  .panel-header h2 { font-size: 14px; font-weight: 600; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .badge.default { background: #1e3a5f; color: #6ea8fe; }
+  .badge.cjk { background: #3b1f5e; color: #c084fc; }
+  .messages { padding: 12px; min-height: 250px; max-height: 350px; overflow-y: auto; }
+  .message { padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+  .message.user { background: #1e3a5f; margin-left: 20%; }
+  .message.system { background: #1f2937; color: #9ca3af; font-size: 11px; text-align: center; }
+  .key-display { font-size: 11px; color: #666; padding: 2px 12px; height: 18px; }
+  .input-area { border-top: 1px solid #2a2b35; padding: 10px; display: flex; gap: 8px; align-items: flex-end; }
+  textarea { flex: 1; background: #0f1117; border: 1px solid #2a2b35; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #e0e0e0; resize: none; min-height: 38px; max-height: 100px; font-family: inherit; outline: none; }
+  textarea:focus { border-color: #6ea8fe; }
+  button.send { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  button.send:hover { background: #1d4ed8; }
+  .info { max-width: 1000px; margin: 20px auto 0; padding: 16px; background: #1a1b23; border-radius: 12px; border: 1px solid #2a2b35; font-size: 13px; line-height: 1.6; }
+  .info h3 { font-size: 14px; margin-bottom: 8px; color: #fff; }
+  .info code { background: #0f1117; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #6ea8fe; }
+  .info ul { padding-left: 20px; }
+  .info li { margin-bottom: 4px; }
+  .hint-bar { font-size: 11px; color: #555; padding: 4px 12px; border-top: 1px solid #1a1b23; }
+  .composing-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .composing-indicator.active { background: #f59e0b; animation: pulse 1s infinite; }
+  .composing-indicator.inactive { background: #374151; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @media (max-width: 700px) { .container { flex-direction: column; } .panel { min-width: unset; } }
+</style>
+</head>
+<body>
+
+<h1>⌨️ Dify sendOnEnter Demo</h1>
+<p class="subtitle">
+  Interactive test for <a href="https://github.com/langgenius/dify/pull/32300">PR #32300</a> — 
+  Configurable Enter/Shift+Enter behavior for CJK IME users
+</p>
+
+<div class="container">
+  <!-- Left: default (sendOnEnter=true) -->
+  <div class="panel" id="panel-true">
+    <div class="panel-header">
+      <h2>sendOnEnter = true</h2>
+      <span class="badge default">Default</span>
+    </div>
+    <div class="messages" id="msgs-true">
+      <div class="message system">Enter → send &nbsp;|&nbsp; Shift+Enter → newline</div>
+    </div>
+    <div class="key-display" id="keys-true"><span class="composing-indicator inactive"></span>&nbsp;</div>
+    <div class="hint-bar">💡 Try typing Japanese/Korean with IME — Enter during composition won't send</div>
+    <div class="input-area">
+      <textarea id="input-true" rows="1" placeholder="Type here (Enter to send)..."
+        onkeydown="handleKey(event,'true')" oninput="autoResize(this)"></textarea>
+      <button class="send" onclick="send('true')">Send</button>
+    </div>
+  </div>
+
+  <!-- Right: CJK mode (sendOnEnter=false) -->
+  <div class="panel" id="panel-false">
+    <div class="panel-header">
+      <h2>sendOnEnter = false</h2>
+      <span class="badge cjk">CJK-friendly</span>
+    </div>
+    <div class="messages" id="msgs-false">
+      <div class="message system">Enter → newline &nbsp;|&nbsp; Shift+Enter → send</div>
+    </div>
+    <div class="key-display" id="keys-false"><span class="composing-indicator inactive"></span>&nbsp;</div>
+    <div class="hint-bar">💡 Enter freely inserts newlines — use Shift+Enter to send</div>
+    <div class="input-area">
+      <textarea id="input-false" rows="1" placeholder="Type here (Shift+Enter to send)..."
+        onkeydown="handleKey(event,'false')" oninput="autoResize(this)"></textarea>
+      <button class="send" onclick="send('false')">Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="info">
+  <h3>🧪 How to Test</h3>
+  <ul>
+    <li><strong>Japanese IME:</strong> Type in hiragana, press Enter to confirm conversion — it should NOT send in either mode</li>
+    <li><strong>Korean IME:</strong> Type hangul characters — Enter during composition stays local</li>
+    <li><strong>Left panel (default):</strong> After IME is done, Enter sends the message</li>
+    <li><strong>Right panel (CJK-friendly):</strong> After IME is done, Enter still just inserts a newline — use Shift+Enter to send</li>
+    <li><strong>Multi-line:</strong> Line breaks are preserved in sent messages</li>
+  </ul>
+  <h3 style="margin-top:12px">⚙️ Configuration</h3>
+  <ul>
+    <li>Embed: <code>window.difyChatbotConfig = { token: '...', sendOnEnter: false }</code></li>
+    <li>URL: <code>/chatbot/TOKEN?sendOnEnter=false</code></li>
+  </ul>
+</div>
+
+<script>
+const composing = { true: false, false: false };
+
+['true','false'].forEach(mode => {
+  const input = document.getElementById('input-' + mode);
+  input.addEventListener('compositionstart', () => {
+    composing[mode] = true;
+    updateKeyDisplay(mode, 'composing...', true);
+  });
+  input.addEventListener('compositionend', () => {
+    composing[mode] = false;
+    updateKeyDisplay(mode, 'composition ended', false);
+  });
+});
+
+function updateKeyDisplay(mode, text, isComposing) {
+  const el = document.getElementById('keys-' + mode);
+  const dot = isComposing ? '<span class="composing-indicator active"></span>' : '<span class="composing-indicator inactive"></span>';
+  el.innerHTML = dot + ' ' + text;
+}
+
+function handleKey(e, mode) {
+  const sendOnEnter = mode === 'true';
+  const keys = [];
+  if (e.shiftKey) keys.push('Shift');
+  if (e.metaKey) keys.push('Cmd');
+  keys.push(e.key);
+  
+  const isComposingNow = composing[mode] || e.nativeEvent?.isComposing;
+  const compText = isComposingNow ? ' (IME composing — send blocked ✓)' : '';
+  updateKeyDisplay(mode, keys.join('+') + compText, isComposingNow);
+
+  // Exact same logic as the PR
+  const isSendCombo = sendOnEnter
+    ? (e.key === 'Enter' && !e.shiftKey)
+    : (e.key === 'Enter' && e.shiftKey);
+
+  if (isSendCombo && !e.nativeEvent?.isComposing) {
+    if (composing[mode]) return;
+    e.preventDefault();
+    send(mode);
+  }
+}
+
+function send(mode) {
+  const input = document.getElementById('input-' + mode);
+  const text = input.value.trim();
+  if (!text) return;
+  
+  const msgs = document.getElementById('msgs-' + mode);
+  const div = document.createElement('div');
+  div.className = 'message user';
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  
+  input.value = '';
+  autoResize(input);
+  updateKeyDisplay(mode, '', false);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+</script>
+</body>
+</html>
